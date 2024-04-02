@@ -1,3 +1,5 @@
+#Prueba 1 utilizando imagen del espectro 3 .tif
+
 import cv2
 import numpy as np
 import os
