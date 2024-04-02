@@ -1,4 +1,4 @@
-#Prueba utilizando filtrado por colores en las imagenes RGB
+#Prueba utilizando filtrado por colores en las imagenes RGB, verde, morado, blanco y cafe
 
 import cv2
 import numpy as np
