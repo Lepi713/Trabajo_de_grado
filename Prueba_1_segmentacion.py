@@ -7,19 +7,22 @@ import os
 # Function to process images
 def process_image(image_path):
     # Read the image
-    image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    image = cv2.imread(image_path)
     
+    # Convert the image to grayscale
+    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
     # Apply Gaussian blur to reduce noise
-    image = cv2.GaussianBlur(image, (5, 5), 0)
+    blurred_image = cv2.GaussianBlur(gray_image, (5, 5), 0)
 
     # Threshold the image to create a binary image
-    _, thresholded = cv2.threshold(image, 200, 255, cv2.THRESH_BINARY)
+    _, thresholded = cv2.threshold(blurred_image, 200, 255, cv2.THRESH_BINARY)
 
     # Find contours
     contours, _ = cv2.findContours(thresholded, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # Create a black canvas for the mask
-    mask = np.zeros_like(image)
+    mask = np.zeros_like(gray_image)
 
     # Filter contours based on area
     filtered_contours = []
@@ -51,9 +54,9 @@ def process_image(image_path):
 
 
 # Folder containing images
-input_folder = r"E:\Procesamiento de imagenes\Pruebas_ortofoto"
-output_folder_mas = r"E:\Procesamiento de imagenes\Pruebas_ortofoto\Salida_mascaras"
-output_folder_img = r"E:\Procesamiento de imagenes\Pruebas_ortofoto\Salida_imagenes"
+input_folder = r"E:\Tesis\Para entrenamiento\Fotos_entrada\Uso"
+output_folder_mas = r"E:\Tesis\Para entrenamiento\Salida\Mascara"
+output_folder_img = r"E:\Tesis\Para entrenamiento\Salida\Foto"
 
 # List all files in the input folder
 image_files = os.listdir(input_folder)
