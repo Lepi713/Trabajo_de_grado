@@ -1,3 +1,5 @@
+#Codigo para seleccion de rectangulos contenedores para obtener las coordenadas de los rectangulos
+
 import cv2
 import numpy as np
 import ctypes
