@@ -42,7 +42,7 @@ def draw_rectangle(event, x, y, flags, param):
         rectangles.append((ix, iy, x, y))  # Store rectangle coordinates
 
 # Load image
-img = cv2.imread(r"E:\Tesis\Para entrenamiento\Fotos_entrada\1_104_0090.JPG")
+img = cv2.imread(r"E:\Tesis\Para entrenamiento\Fotos_entrada\1_104_0410.JPG")
 img_copy = img.copy()
 mask = np.zeros_like(img)
 
