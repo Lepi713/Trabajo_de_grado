@@ -5,8 +5,20 @@ def apply_watershed(image):
     # Convert image to grayscale
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
+    # Detect green regions in the image
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    lower_green = np.array([40, 40, 40])
+    upper_green = np.array([70, 255, 255])
+    mask_green = cv2.inRange(hsv, lower_green, upper_green)
+
+    # Invert the green mask
+    mask_green = cv2.bitwise_not(mask_green)
+
+    # Combine the green mask with the grayscale image
+    masked_gray = cv2.bitwise_and(gray, gray, mask=mask_green)
+
     # Apply thresholding
-    ret, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    ret, thresh = cv2.threshold(masked_gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
     # Noise removal
     kernel = np.ones((3,3), np.uint8)
@@ -34,17 +46,29 @@ def apply_watershed(image):
 
     # Apply watershed algorithm
     markers = cv2.watershed(image, markers)
-    image[markers == -1] = [255, 0, 0]  # Mark watershed boundaries
 
-    return image
+    # Create mask
+    mask = np.zeros_like(gray, dtype=np.uint8)
 
-def apply_watershed_to_all_rectangles(input_file, image_file, output_file):
+    # Mark watershed boundaries in the mask
+    mask[markers == -1] = 255
+    
+    # Find contours within the watershed region
+    contours, _ = cv2.findContours(opening, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    # Draw contours in the mask
+    cv2.drawContours(mask, contours, -1, (255), thickness=cv2.FILLED)
+
+    return mask
+
+
+def apply_watershed_to_all_rectangles(input_file, image_file):
     # Read the input image
     input_image = cv2.imread(image_file)
     height, width, _ = input_image.shape
 
-    # Create a black image with the same dimensions as the original image
-    black_image = np.zeros((height, width, 3), dtype=np.uint8)
+    # Create a mask with the same dimensions as the original image
+    mask = np.zeros((height, width), dtype=np.uint8)
 
     # Read coordinates from the input file and process each region
     with open(input_file, "r") as file:
@@ -65,14 +89,17 @@ def apply_watershed_to_all_rectangles(input_file, image_file, output_file):
                 # Apply Watershed algorithm to the region
                 processed_region = apply_watershed(region)
 
-                # Paste the processed region onto the black image at the corresponding coordinates
-                black_image[y1:y2, x1:x2] = processed_region
+                # Update the corresponding region in the mask
+                mask[y1:y2, x1:x2] = processed_region
 
-    # Save the resulting image
-    cv2.imwrite(output_file, black_image)
+    return mask
 
 if __name__ == "__main__":
     input_file = r"E:\Tesis\Para entrenamiento\Salida\Coordenadas\1_100_0020_1.txt"
     image_file = r"E:\Tesis\Para entrenamiento\Fotos_entrada\1_100_0020.JPG"
-    output_file = r"E:\Tesis\Para entrenamiento\Salida\image_with_rectangles_1.png"
-    apply_watershed_to_all_rectangles(input_file, image_file, output_file)
+    mask = apply_watershed_to_all_rectangles(input_file, image_file)
+
+    # Display the mask
+    cv2.imshow("Mask", mask)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
