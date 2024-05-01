@@ -1,3 +1,9 @@
+"""
+Se esta segmentando la imagen por rectangulos contenedores, posteriormente se le aplica wateshed y un filtro de color verde para dejar solo las flores dentro de 
+los rectangulos, por ultimo se esta invirtiendo la imagen para que las regiones de interes sean de color blanco y el resto negro, generando la mascara de solo las flores
+
+"""
+
 import cv2
 import numpy as np
 
@@ -68,7 +74,7 @@ def apply_watershed_to_all_rectangles(input_file, image_file):
     height, width, _ = input_image.shape
 
     # Create a mask with the same dimensions as the original image
-    mask = np.zeros((height, width), dtype=np.uint8)
+    mask = np.ones((height, width), dtype=np.uint8) * 255  # Initialize with white pixels
 
     # Read coordinates from the input file and process each region
     with open(input_file, "r") as file:
@@ -94,12 +100,24 @@ def apply_watershed_to_all_rectangles(input_file, image_file):
 
     return mask
 
+def invert_colors(image):
+    # Invert colors
+    inverted_image = cv2.bitwise_not(image)
+
+    return inverted_image
+
 if __name__ == "__main__":
     input_file = r"E:\Tesis\Para entrenamiento\Salida\Coordenadas\1_100_0020_1.txt"
     image_file = r"E:\Tesis\Para entrenamiento\Fotos_entrada\1_100_0020.JPG"
+    output_file = r"E:\Tesis\Para entrenamiento\Salida\image_with_rectangles_2.png"
     mask = apply_watershed_to_all_rectangles(input_file, image_file)
 
+    inverted_mask = invert_colors(mask)
+
+    # Save the processed image
+    cv2.imwrite(output_file, inverted_mask)
+
     # Display the mask
-    cv2.imshow("Mask", mask)
+    cv2.imshow("Mask", inverted_mask)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
