@@ -4,11 +4,6 @@ import cv2
 import numpy as np
 import ctypes
 
-# Function to get screen resolution
-def get_screen_resolution():
-    user32 = ctypes.windll.user32
-    width, height = user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
-    return width, height
 
 # Global variables
 drawing = False  # True if mouse is pressed
@@ -42,7 +37,7 @@ def draw_rectangle(event, x, y, flags, param):
         rectangles.append((ix, iy, x, y))  # Store rectangle coordinates
 
 # Load image
-img = cv2.imread(r"E:\Tesis\Para entrenamiento\Fotos_entrada\1_104_0410.JPG")
+img = cv2.imread(r"E:\Tesis\Para entrenamiento\Fotos_entrada\4_100_0190.JPG")
 img_copy = img.copy()
 mask = np.zeros_like(img)
 
