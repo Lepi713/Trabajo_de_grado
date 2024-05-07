@@ -4,6 +4,7 @@ los rectangulos, por ultimo se esta invirtiendo la imagen para que las regiones 
 
 """
 
+import os
 import cv2
 import numpy as np
 
@@ -67,57 +68,63 @@ def apply_watershed(image):
 
     return mask
 
-
-def apply_watershed_to_all_rectangles(input_file, image_file):
-    # Read the input image
-    input_image = cv2.imread(image_file)
-    height, width, _ = input_image.shape
-
-    # Create a mask with the same dimensions as the original image
-    mask = np.ones((height, width), dtype=np.uint8) * 255  # Initialize with white pixels
-
-    # Read coordinates from the input file and process each region
-    with open(input_file, "r") as file:
-        for line in file:
-            x1, y1, x2, y2 = map(int, line.strip().split(","))
-            
-            # Ensure x1 < x2 and y1 < y2
-            if x2 < x1:
-                x1, x2 = x2, x1
-            if y2 < y1:
-                y1, y2 = y2, y1
-
-            # Extract region of interest from the input image
-            region = input_image[y1:y2, x1:x2]
-
-            # Check if the extracted region is not empty (i.e., width and height are not zero)
-            if region.shape[0] != 0 and region.shape[1] != 0:
-                # Apply Watershed algorithm to the region
-                processed_region = apply_watershed(region)
-
-                # Update the corresponding region in the mask
-                mask[y1:y2, x1:x2] = processed_region
-
-    return mask
-
 def invert_colors(image):
     # Invert colors
     inverted_image = cv2.bitwise_not(image)
 
     return inverted_image
 
+def apply_watershed_to_all_rectangles(coord_folder, image_folder, output_folder):
+    # Iterate over all files in the coordinate folder
+    for filename in os.listdir(coord_folder):
+        if filename.endswith(".txt"):
+            coord_file = os.path.join(coord_folder, filename)
+            image_filename = os.path.splitext(filename)[0] + ".JPG"
+            image_file = os.path.join(image_folder, image_filename)
+            output_file = os.path.join(output_folder, "image_with_rectangles_" + image_filename)
+            
+            # Read the input image
+            input_image = cv2.imread(image_file)
+            height, width, _ = input_image.shape
+
+            # Create a mask with the same dimensions as the original image
+            mask = np.ones((height, width), dtype=np.uint8) * 255  # Initialize with white pixels
+
+            # Read coordinates from the input file and process each region
+            with open(coord_file, "r") as file:
+                for line in file:
+                    x1, y1, x2, y2 = map(int, line.strip().split(","))
+                    
+                    # Ensure x1 < x2 and y1 < y2
+                    if x2 < x1:
+                        x1, x2 = x2, x1
+                    if y2 < y1:
+                        y1, y2 = y2, y1
+
+                    # Extract region of interest from the input image
+                    region = input_image[y1:y2, x1:x2]
+
+                    # Check if the extracted region is not empty (i.e., width and height are not zero)
+                    if region.shape[0] != 0 and region.shape[1] != 0:
+                        # Apply Watershed algorithm to the region
+                        processed_region = apply_watershed(region)
+
+                        # Update the corresponding region in the mask
+                        mask[y1:y2, x1:x2] = processed_region
+
+            inverted_mask = invert_colors(mask)
+
+            # Save the processed image
+            cv2.imwrite(output_file, inverted_mask)
+
+            # Display the mask (optional)
+            # cv2.imshow("Mask", inverted_mask)
+            # cv2.waitKey(0)
+            # cv2.destroyAllWindows()
+
 if __name__ == "__main__":
-    input_file = r"E:\Tesis\Para entrenamiento\Salida\Coordenadas\1_100_0020_1.txt"
-    image_file = r"E:\Tesis\Para entrenamiento\Fotos_entrada\1_100_0020.JPG"
-    output_file = r"E:\Tesis\Para entrenamiento\Salida\image_with_rectangles_2.png"
-    mask = apply_watershed_to_all_rectangles(input_file, image_file)
+    coord_folder = r"E:\Tesis\Para entrenamiento\Salida\Coordenadas\Actualizadas"
+    image_folder = r"E:\Tesis\Para entrenamiento\Fotos_entrada"
+    output_folder = r"E:\Tesis\Para entrenamiento\Salida\Fotos_procesadas"
+    apply_watershed_to_all_rectangles(coord_folder, image_folder, output_folder)
 
-    inverted_mask = invert_colors(mask)
-
-    # Save the processed image
-    cv2.imwrite(output_file, inverted_mask)
-
-    # Display the mask
-    cv2.imshow("Mask", inverted_mask)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
