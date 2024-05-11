@@ -1,63 +1,86 @@
+import os
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
 
-# Read the image
-image = cv2.imread(r"E:\Tesis\DCIM_1_agosto_2023\100FPLAN\DJI_0010.JPG")
-image_copy = image.copy()  # Create a copy for drawing contours
+def process_image(image_path):
+    # Read the image
+    image = cv2.imread(image_path)
 
-# Convert BGR to HSV (Hue, Saturation, Value) color space
-hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    # Convert BGR to HSV (Hue, Saturation, Value) color space
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
-# Define lower and upper bounds for green color in HSV
-lower_green = np.array([35, 50, 50])  # Adjust these values based on your green range
-upper_green = np.array([90, 255, 255])
+    # Define lower and upper bounds for green color in HSV
+    lower_green = np.array([35, 50, 50])  # Adjust these values based on your green range
+    upper_green = np.array([90, 255, 255])
 
-# Define lower and upper bounds for yellow color in HSV
-lower_yellow = np.array([20, 100, 100])
-upper_yellow = np.array([30, 255, 255])
+    # Define lower and upper bounds for yellow color in HSV
+    lower_yellow = np.array([20, 100, 100])
+    upper_yellow = np.array([30, 255, 255])
 
-# Create a mask for green areas in the image
-mask_green = cv2.inRange(hsv, lower_green, upper_green)
+    # Create a mask for green areas in the image
+    mask_green = cv2.inRange(hsv, lower_green, upper_green)
 
-# Create a mask for yellow areas in the image
-mask_yellow = cv2.inRange(hsv, lower_yellow, upper_yellow)
+    # Create a mask for yellow areas in the image
+    mask_yellow = cv2.inRange(hsv, lower_yellow, upper_yellow)
 
-# Combine green and yellow masks to create a final mask for non-green and non-yellow areas
-mask_non_green_yellow = cv2.bitwise_or(mask_green, mask_yellow)
+    # Combine green and yellow masks to create a final mask for non-green and non-yellow areas
+    mask_non_green_yellow = cv2.bitwise_or(mask_green, mask_yellow)
 
-# Invert the mask (to get non-green and non-yellow areas)
-mask_non_green_yellow_inv = cv2.bitwise_not(mask_non_green_yellow)
+    # Invert the mask (to get non-green and non-yellow areas)
+    mask_non_green_yellow_inv = cv2.bitwise_not(mask_non_green_yellow)
 
-# Apply the mask to the original image
-result = cv2.bitwise_and(image, image, mask=mask_non_green_yellow_inv)
+    # Apply the mask to the original image
+    result = cv2.bitwise_and(image, image, mask=mask_non_green_yellow_inv)
 
-# Convert the result to grayscale
-gray = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
+    # Convert the result to grayscale
+    gray = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
 
-# Apply Gaussian blur to reduce noise
-blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    # Apply Gaussian blur to reduce noise
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
 
-# Use thresholding to create a binary image
-_, thresh = cv2.threshold(blurred, 120, 255, cv2.THRESH_BINARY)
+    # Use thresholding to create a binary image
+    _, thresh = cv2.threshold(blurred, 120, 255, cv2.THRESH_BINARY)
 
-# Find contours
-contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # Find contours
+    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-# Filter contours within the area range of 300 to 500 pixels
-filtered_contours = []
-for cnt in contours:
-    area = cv2.contourArea(cnt)
-    if 5 < area < 900:
-        filtered_contours.append(cnt)
+    # Filter contours within the area range of 300 to 500 pixels
+    filtered_contours = []
+    for cnt in contours:
+        area = cv2.contourArea(cnt)
+        if 2 < area < 900:
+            filtered_contours.append(cnt)
 
-# Draw contours on the original image
-cv2.drawContours(image_copy, filtered_contours, -1, (0, 255, 0), 2)
+    return filtered_contours
 
-# Display the results
-plt.figure(figsize=(12, 6))
-plt.subplot(141), plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)), plt.title('Original Image')
-plt.subplot(142), plt.imshow(mask_green, cmap='gray'), plt.title('Mask (Green)')
-plt.subplot(143), plt.imshow(mask_yellow, cmap='gray'), plt.title('Mask (Yellow)')
-plt.subplot(144), plt.imshow(cv2.cvtColor(image_copy, cv2.COLOR_BGR2RGB)), plt.title('Image with Contours (Filtered)')
-plt.show()
+# Path to the folder containing images
+folder_path = r"E:\Tesis\Para entrenamiento\Fotos_entrada\Usadas"
+
+# Output folder for processed images
+output_folder = r"E:\Tesis\Para entrenamiento\Salida\Salida automatico"
+
+# Create the output folder if it doesn't exist
+os.makedirs(output_folder, exist_ok=True)
+
+# Dictionary to store the count of contours for each image
+contour_count_dict = {}
+
+# Process each image in the folder
+for filename in os.listdir(folder_path):
+    if filename.endswith(".JPG") or filename.endswith(".jpg"):
+        image_path = os.path.join(folder_path, filename)
+        contours = process_image(image_path)
+        
+        # Save the processed image to the output folder
+        output_path = os.path.join(output_folder, filename)
+        cv2.imwrite(output_path, cv2.drawContours(cv2.imread(image_path), contours, -1, (0, 255, 0), 2))
+
+        # Store the count of contours for this image
+        contour_count_dict[filename] = len(contours)
+
+# Write contour count information to a text file
+with open("contour_count.txt", "w") as file:
+    for filename, count in contour_count_dict.items():
+        file.write(f"{filename}: {count} contours\n")
+
+print("All images processed. Contour count information saved to contour_count.txt.")
