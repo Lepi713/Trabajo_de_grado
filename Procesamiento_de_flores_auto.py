@@ -29,6 +29,10 @@ def process_image(image_path):
     # Invert the mask (to get non-green and non-yellow areas)
     mask_non_green_yellow_inv = cv2.bitwise_not(mask_non_green_yellow)
 
+    # Exclude black areas from the mask
+    black_mask = cv2.inRange(image, (0, 0, 0), (0, 0, 0))
+    mask_non_green_yellow_inv[black_mask == 255] = 0
+
     # Apply the mask to the original image
     result = cv2.bitwise_and(image, image, mask=mask_non_green_yellow_inv)
 
@@ -44,23 +48,27 @@ def process_image(image_path):
     # Find contours
     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    # Filter contours within the area range of 300 to 500 pixels
+    # Filter contours within the area range of 2 to 900 pixels
     filtered_contours = []
     for cnt in contours:
         area = cv2.contourArea(cnt)
         if 2 < area < 900:
             filtered_contours.append(cnt)
 
-    return filtered_contours
+    return filtered_contours, mask_non_green_yellow_inv
 
 # Path to the folder containing images
-folder_path = r"E:\Tesis\Para entrenamiento\Fotos_entrada\Usadas"
+folder_path = r"E:\Tesis\Para entrenamiento\Fotos_entrada\Usadas\Intento 2"
 
 # Output folder for processed images
-output_folder = r"E:\Tesis\Para entrenamiento\Salida\Salida automatico"
+output_folder = r"E:\Tesis\Para entrenamiento\Salida\Salida automatico\Intento 2"
 
-# Create the output folder if it doesn't exist
+# Output folder for masks
+mask_folder = r"E:\Tesis\Para entrenamiento\Salida\Salida automatico\Intento 2\Mascaras"
+
+# Create the output and mask folders if they don't exist
 os.makedirs(output_folder, exist_ok=True)
+os.makedirs(mask_folder, exist_ok=True)
 
 # Dictionary to store the count of contours for each image
 contour_count_dict = {}
@@ -69,11 +77,21 @@ contour_count_dict = {}
 for filename in os.listdir(folder_path):
     if filename.endswith(".JPG") or filename.endswith(".jpg"):
         image_path = os.path.join(folder_path, filename)
-        contours = process_image(image_path)
-        
+        contours, mask = process_image(image_path)
+
+        # Create a blank mask for the filtered contours
+        filtered_mask = np.zeros_like(mask)
+
+        # Draw the filtered contours on the blank mask
+        cv2.drawContours(filtered_mask, contours, -1, (255), thickness=cv2.FILLED)
+
         # Save the processed image to the output folder
         output_path = os.path.join(output_folder, filename)
         cv2.imwrite(output_path, cv2.drawContours(cv2.imread(image_path), contours, -1, (0, 255, 0), 2))
+
+        # Save the filtered mask to the mask folder
+        mask_path = os.path.join(mask_folder, filename)
+        cv2.imwrite(mask_path, filtered_mask)
 
         # Store the count of contours for this image
         contour_count_dict[filename] = len(contours)
